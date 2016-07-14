@@ -1,8 +1,6 @@
 package hudson.plugins.performance;
 
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.ModelObject;
+import hudson.model.*;
 import hudson.plugins.performance.PerformanceProjectAction.Range;
 import hudson.util.ChartUtil;
 import hudson.util.ChartUtil.NumberOnlyBuildLabel;
@@ -35,13 +33,13 @@ import java.util.List;
  */
 public class TestSuiteReportDetail implements ModelObject {
 
-  private AbstractProject<?, ?> project;
+  private Job<?, ?> project;
   private String filename;
   private Range buildsLimits;
 
   private transient List<String> performanceReportTestCaseList;
 
-  public TestSuiteReportDetail(final AbstractProject<?, ?> project,
+  public TestSuiteReportDetail(final Job<?, ?> project,
                                final String pluginName, final StaplerRequest request, String filename,
                                Range buildsLimits) {
     this.project = project;
@@ -69,11 +67,11 @@ public class TestSuiteReportDetail implements ModelObject {
       return;
     }
     DataSetBuilder<String, NumberOnlyBuildLabel> dataSetBuilderAverage = new DataSetBuilder<String, NumberOnlyBuildLabel>();
-    List<? extends AbstractBuild<?, ?>> builds = getProject().getBuilds();
+    List<? extends Run<?, ?>> builds = getProject().getBuilds();
     Range buildsLimits = this.buildsLimits;
 
     int nbBuildsToAnalyze = builds.size();
-    for (AbstractBuild<?, ?> build : builds) {
+    for (Run<?, ?> build : builds) {
       if (buildsLimits.in(nbBuildsToAnalyze)) {
 
         if (!buildsLimits.includedByStep(build.number)) {
@@ -159,10 +157,10 @@ public class TestSuiteReportDetail implements ModelObject {
     this.performanceReportTestCaseList = new ArrayList<String>(0);
     String performanceReportNameFile = this.getFilename();
 
-    List<? extends AbstractBuild<?, ?>> builds = getProject().getBuilds();
+    List<? extends Run<?, ?>> builds = getProject().getBuilds();
 
     builds.size();
-    for (AbstractBuild<?, ?> build : builds) {
+    for (Run<?, ?> build : builds) {
 
       PerformanceBuildAction performanceBuildAction = build
           .getAction(PerformanceBuildAction.class);
@@ -189,7 +187,7 @@ public class TestSuiteReportDetail implements ModelObject {
     return this.performanceReportTestCaseList;
   }
 
-  public AbstractProject<?, ?> getProject() {
+  public Job<?, ?> getProject() {
     return project;
   }
 

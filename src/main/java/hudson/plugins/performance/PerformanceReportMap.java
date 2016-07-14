@@ -2,6 +2,7 @@ package hudson.plugins.performance;
 
 import hudson.model.AbstractBuild;
 import hudson.model.ModelObject;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ChartUtil;
 import hudson.util.ChartUtil.NumberOnlyBuildLabel;
@@ -34,7 +35,7 @@ public class PerformanceReportMap implements ModelObject {
   private static final String PLUGIN_NAME = "performance";
   private static final String TRENDREPORT_LINK = "trendReport";
 
-  private static AbstractBuild<?, ?> currentBuild = null;
+  private static Run<?, ?> currentBuild = null;
 
   /**
    * Parses the reports and build a {@link PerformanceReportMap}.
@@ -62,7 +63,7 @@ public class PerformanceReportMap implements ModelObject {
     }
   }
 
-  public AbstractBuild<?, ?> getBuild() {
+  public Run<?, ?> getBuild() {
     return buildAction.getBuild();
   }
 
@@ -170,10 +171,10 @@ public class PerformanceReportMap implements ModelObject {
   public void doRespondingTimeGraph(StaplerRequest request,
                                     StaplerResponse response) throws IOException {
     String parameter = request.getParameter("performanceReportPosition");
-    AbstractBuild<?, ?> previousBuild = getBuild();
-    final Map<AbstractBuild<?, ?>, Map<String, PerformanceReport>> buildReports = new LinkedHashMap<AbstractBuild<?, ?>, Map<String, PerformanceReport>>();
+    Run<?, ?> previousBuild = getBuild();
+    final Map<Run<?, ?>, Map<String, PerformanceReport>> buildReports = new LinkedHashMap<Run<?, ?>, Map<String, PerformanceReport>>();
     while (previousBuild != null) {
-      final AbstractBuild<?, ?> currentBuild = previousBuild;
+      final Run<?, ?> currentBuild = previousBuild;
       parseReports(currentBuild, TaskListener.NULL,
           new PerformanceReportCollector() {
 
@@ -192,7 +193,7 @@ public class PerformanceReportMap implements ModelObject {
     }
     // Now we should have the data necessary to generate the graphs!
     DataSetBuilder<String, NumberOnlyBuildLabel> dataSetBuilderAverage = new DataSetBuilder<String, NumberOnlyBuildLabel>();
-    for (AbstractBuild<?, ?> currentBuild : buildReports.keySet()) {
+    for (Run<?, ?> currentBuild : buildReports.keySet()) {
       NumberOnlyBuildLabel label = new NumberOnlyBuildLabel(currentBuild);
       PerformanceReport report = buildReports.get(currentBuild).get(parameter);
       dataSetBuilderAverage.add(report.getAverage(),
@@ -205,11 +206,11 @@ public class PerformanceReportMap implements ModelObject {
   public void doSummarizerGraph(StaplerRequest request, StaplerResponse response)
       throws IOException {
     String parameter = request.getParameter("performanceReportPosition");
-    AbstractBuild<?, ?> previousBuild = getBuild();
-    final Map<AbstractBuild<?, ?>, Map<String, PerformanceReport>> buildReports = new LinkedHashMap<AbstractBuild<?, ?>, Map<String, PerformanceReport>>();
+    Run<?, ?> previousBuild = getBuild();
+    final Map<Run<?, ?>, Map<String, PerformanceReport>> buildReports = new LinkedHashMap<Run<?, ?>, Map<String, PerformanceReport>>();
 
     while (previousBuild != null) {
-      final AbstractBuild<?, ?> currentBuild = previousBuild;
+      final Run<?, ?> currentBuild = previousBuild;
       parseReports(currentBuild, TaskListener.NULL,
           new PerformanceReportCollector() {
 
@@ -227,7 +228,7 @@ public class PerformanceReportMap implements ModelObject {
       previousBuild = previousBuild.getPreviousCompletedBuild();
     }
     DataSetBuilder<NumberOnlyBuildLabel, String> dataSetBuilderSummarizer = new DataSetBuilder<NumberOnlyBuildLabel, String>();
-    for (AbstractBuild<?, ?> currentBuild : buildReports.keySet()) {
+    for (Run<?, ?> currentBuild : buildReports.keySet()) {
       NumberOnlyBuildLabel label = new NumberOnlyBuildLabel(currentBuild);
       PerformanceReport report = buildReports.get(currentBuild).get(parameter);
 
@@ -246,7 +247,7 @@ public class PerformanceReportMap implements ModelObject {
             Messages.ProjectAction_RespondingTime()), 400, 200);
   }
 
-  private void parseReports(AbstractBuild<?, ?> build, TaskListener listener,
+  private void parseReports(Run<?, ?> build, TaskListener listener,
                             PerformanceReportCollector collector, final String filename)
       throws IOException {
     File repo = new File(build.getRootDir(),
@@ -315,7 +316,7 @@ public class PerformanceReportMap implements ModelObject {
       }
     }
 
-    AbstractBuild<?, ?> previousBuild = getBuild().getPreviousCompletedBuild();
+    Run<?, ?> previousBuild = getBuild().getPreviousCompletedBuild();
     if (previousBuild == null) {
       return;
     }
@@ -359,9 +360,9 @@ public class PerformanceReportMap implements ModelObject {
   public Object createTrendReportGraphs(final StaplerRequest request) {
     String filename = getTrendReportFilename(request);
     PerformanceReport report = performanceReportMap.get(filename);
-    AbstractBuild<?, ?> build = getBuild();
+    Run<?, ?> build = getBuild();
 
-    TrendReportGraphs trendReport = new TrendReportGraphs(build.getProject(),
+    TrendReportGraphs trendReport = new TrendReportGraphs(build.getParent(),
         build, request, filename, report);
 
     return trendReport;

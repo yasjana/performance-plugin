@@ -10,14 +10,16 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.ListBoxModel;
+import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PerformancePublisher extends Recorder {
+public class PerformancePublisher extends Recorder implements SimpleBuildStep{
 
   @Extension
   public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
@@ -171,7 +173,7 @@ public class PerformancePublisher extends Recorder {
     this.modeThroughput = modeThroughput;
   }
 
-  public static File getPerformanceReport(AbstractBuild<?, ?> build,
+  public static File getPerformanceReport( Run<?, ?> build,
                                           String parserDisplayName, String performanceReportName) {
     return new File(build.getRootDir(),
         PerformanceReportMap.getPerformanceReportFileRelativePath(
@@ -270,8 +272,7 @@ public class PerformancePublisher extends Recorder {
   }
 
   @Override
-  public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
-      throws InterruptedException, IOException {
+  public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
 
     PrintStream logger = listener.getLogger();
     double thresholdTolerance = 0.00000001;
@@ -327,11 +328,11 @@ public class PerformancePublisher extends Recorder {
           glob = env.expand(glob);
           logger.println("Performance: Recording " + parser.getReportName() + " reports '" + glob + "'");
 
-          List<FilePath> files = locatePerformanceReports(build.getWorkspace(), glob);
+          List<FilePath> files = locatePerformanceReports(workspace, glob);
 
           if (files.isEmpty()) {
             if (build.getResult().isWorseThan(Result.UNSTABLE)) {
-              return true;
+              return;
             }
             if (failBuildIfNoResultFile) {
               build.setResult(Result.FAILURE);
@@ -340,7 +341,7 @@ public class PerformancePublisher extends Recorder {
                 + " files matching '" + glob
                 + "' have been found. Has the report generated?. Setting Build to "
                 + build.getResult());
-            return true;
+            return;
           }
 
           List<File> localReports = copyReportsToMaster(build, logger, files, parser.getDescriptor().getDisplayName());
@@ -520,11 +521,11 @@ public class PerformancePublisher extends Recorder {
           String glob = parser.glob;
           glob = env.expand(glob);
           name = glob;
-          List<FilePath> files = locatePerformanceReports(build.getWorkspace(), glob);
+          List<FilePath> files = locatePerformanceReports(workspace, glob);
 
           if (files.isEmpty()) {
             if (build.getResult().isWorseThan(Result.UNSTABLE)) {
-              return true;
+              return;
             }
             if (failBuildIfNoResultFile) {
               build.setResult(Result.FAILURE);
@@ -533,7 +534,7 @@ public class PerformancePublisher extends Recorder {
                 + " files matching '" + glob
                 + "' have been found. Has the report generated?. Setting Build to "
                 + build.getResult());
-            return true;
+            return;
           }
 
           List<File> localReports = copyReportsToMaster(build, logger, files, parser.getDescriptor().getDisplayName());
@@ -566,14 +567,14 @@ public class PerformancePublisher extends Recorder {
         bw.write("<results>\n");
 
         // getting previous build/nth previous build..
-        AbstractBuild<?, ?> prevBuild;
+         Run<?, ?> prevBuild;
 
         if (compareBuildPrevious) {
           buildNo += "previous";
           prevBuild = build.getPreviousSuccessfulBuild();
         } else {
           buildNo += nthBuildNumber;
-          prevBuild = getnthBuild(build, listener);
+          prevBuild = getnthBuild(build);
         }
 
         buildNo += "</buildNum>\n";
@@ -769,10 +770,10 @@ public class PerformancePublisher extends Recorder {
       } catch (Exception ignored) {
       }
     }
-    return true;
+    return;
   }
 
-  private List<File> copyReportsToMaster(AbstractBuild<?, ?> build,
+  private List<File> copyReportsToMaster( Run<?, ?> build,
                                          PrintStream logger, List<FilePath> files, String parserDisplayName)
       throws IOException, InterruptedException {
     List<File> localReports = new ArrayList<File>();
@@ -860,7 +861,7 @@ public class PerformancePublisher extends Recorder {
   }
 
 
-  public static File[] getPerformanceReportDirectory(AbstractBuild<?, ?> build,
+  public static File[] getPerformanceReportDirectory( Run<?, ?> build,
                                                      String parserDisplayName, PrintStream logger) {
     File folder = new File(build.getRootDir() + "/" + PerformanceReportMap.getPerformanceReportFileRelativePath(parserDisplayName, ""));
     return folder.listFiles();
@@ -876,9 +877,9 @@ public class PerformancePublisher extends Recorder {
    */
 
   // @psingh5 -
-  public AbstractBuild<?, ?> getnthBuild(AbstractBuild<?, ?> build, BuildListener listener)
+  public  Run<?, ?> getnthBuild( Run<?, ?> build)
       throws IOException {
-    AbstractBuild<?, ?> nthBuild = build;
+     Run<?, ?> nthBuild = build;
 
     int nextBuildNumber = build.number - nthBuildNumber;
 
@@ -890,7 +891,7 @@ public class PerformancePublisher extends Recorder {
     return (nthBuildNumber == 0) ? null : nthBuild;
   }
 
-  private List<File> getExistingReports(AbstractBuild<?, ?> build, PrintStream logger, String parserDisplayName)
+  private List<File> getExistingReports( Run<?, ?> build, PrintStream logger, String parserDisplayName)
       throws IOException, InterruptedException {
     List<File> localReports = new ArrayList<File>();
     final File localReport[] = getPerformanceReportDirectory(build, parserDisplayName, logger);

@@ -1,6 +1,7 @@
 package hudson.plugins.performance;
 
 import hudson.model.AbstractProject;
+import hudson.model.Job;
 import hudson.model.ModelObject;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
@@ -92,7 +93,7 @@ public class GraphConfigurationDetail implements ModelObject {
 
   static DateFormat format = new SimpleDateFormat(DEFAULT_DATE);
 
-  public GraphConfigurationDetail(final AbstractProject<?, ?> project,
+  public GraphConfigurationDetail(final Job<?, ?> project,
                                   final String pluginName, final StaplerRequest request) {
 
     String value = createCookieHandler(pluginName).getValue(
@@ -228,7 +229,7 @@ public class GraphConfigurationDetail implements ModelObject {
    * @param pluginName the name of the plug-in
    * @return the created file
    */
-  protected static File createDefaultsFile(final AbstractProject<?, ?> project,
+  protected static File createDefaultsFile(final Job<?, ?> project,
                                            final String pluginName) {
     return new File(project.getRootDir(), pluginName + ".txt");
   }

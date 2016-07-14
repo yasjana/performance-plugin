@@ -3,17 +3,21 @@ package hudson.plugins.performance;
 import hudson.model.AbstractBuild;
 import hudson.model.Action;
 import hudson.util.StreamTaskListener;
+import hudson.model.Run;
+import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.StaplerProxy;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PerformanceBuildAction implements Action, StaplerProxy {
-  private final AbstractBuild<?, ?> build;
+public class PerformanceBuildAction implements Action, StaplerProxy , SimpleBuildStep.LastBuildAction {
+  private final  Run<?, ?> build;
 
   /**
    * Configured parsers used to parse reports in this build.
@@ -22,17 +26,21 @@ public class PerformanceBuildAction implements Action, StaplerProxy {
   private final List<PerformanceReportParser> parsers;
 
   private transient final PrintStream hudsonConsoleWriter;
+  private final List<PerformanceProjectAction> projectActions;
 
   private transient WeakReference<PerformanceReportMap> performanceReportMap;
 
   private static final Logger logger = Logger.getLogger(PerformanceBuildAction.class.getName());
 
 
-  public PerformanceBuildAction(AbstractBuild<?, ?> pBuild, PrintStream logger,
+  public PerformanceBuildAction( Run<?, ?> pBuild, PrintStream logger,
                                 List<PerformanceReportParser> parsers) {
     build = pBuild;
     hudsonConsoleWriter = logger;
     this.parsers = parsers;
+    List<PerformanceProjectAction> projectActions = new ArrayList<PerformanceProjectAction>();
+    projectActions.add(new PerformanceProjectAction(build.getParent()));
+    this.projectActions = projectActions;
   }
 
   public PerformanceReportParser getParserByDisplayName(String displayName) {
@@ -59,7 +67,7 @@ public class PerformanceBuildAction implements Action, StaplerProxy {
     return getPerformanceReportMap();
   }
 
-  public AbstractBuild<?, ?> getBuild() {
+  public  Run<?, ?> getBuild() {
     return build;
   }
 
@@ -89,5 +97,10 @@ public class PerformanceBuildAction implements Action, StaplerProxy {
   public void setPerformanceReportMap(
       WeakReference<PerformanceReportMap> performanceReportMap) {
     this.performanceReportMap = performanceReportMap;
+  }
+
+  @Override
+  public Collection<? extends Action> getProjectActions() {
+    return null;
   }
 }
